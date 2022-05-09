@@ -38,6 +38,7 @@ def Histograms2D_Template(Title, xTitle, yTitle, xBins, yBins, xMin, xMax, yMin,
     H.xData = xData
     H.yData = yData
     H.Weights = Weight
+    H.FontSize = 30
     H.ShowBinContent = True
 
     H.Filename = FileName
@@ -45,13 +46,13 @@ def Histograms2D_Template(Title, xTitle, yTitle, xBins, yBins, xMin, xMax, yMin,
     return H
 
 
-def HistogramCombineTemplate(DPI = 500, Scaling = 7, Size = 10):
+def HistogramCombineTemplate(DPI = 500, Scaling = 5, Size = 10):
     T = CombineHistograms()
     T.DefaultDPI = DPI
     T.DefaultScaling = Scaling
     T.LabelSize = Size + 5
     T.FontSize = Size
-    T.LegendSize = Size
+    T.LegendSize = Size + 2
     return T
 
 
@@ -326,14 +327,11 @@ def TopFragmentation(FileDir, eta_cut = None, pt_cut = None, Plot = True):
 
 def EntryPoint(F):
     
-
-    
     start_eta = 3
     end_eta = 1
     n_eta = 10
     delta_eta = (abs(end_eta - start_eta)/n_eta)
     Scan_eta = [round(start_eta - delta_eta*j, 3) for j in range(n_eta+1)] 
-
 
     start_pt = 10
     end_pt = 110
@@ -341,29 +339,33 @@ def EntryPoint(F):
     delta_pt = (abs(end_pt - start_pt)/n_pt)
     Scan_pt = [start_pt + delta_pt*j for j in range(n_pt+1)] 
     
-    Backup = {}
     for pt in Scan_pt:
+        Backup = {}
         for eta in Scan_eta:
             print("Scanning ----> "+ str(pt) + " @ " + str(eta))
             Backup[str(pt) + "_" + str(eta)] = TopFragmentation(F, eta, pt)
 
         print("Checkpoint ----> "+ str(pt))
-    PickleObject(Backup, "FragmentationJets_" + str(pt))
-   
+        PickleObject(Backup, "FragmentationJets_" + str(pt))
 
 
 def EntryPointEfficiencyHists():
-    f = "_Cache/CustomSample_tttt_Cache"
-    d = Directories(f).ListFilesInDir(f)
+    #f = "_Cache/CustomSample_tttt_Cache"
+    #d = Directories(f).ListFilesInDir(f)
+    #
+    #F = []
+    #for i in d:
+    #    F.append(UnpickleObject(i, f))
+    #EntryPoint(F)
+    #JetAnalysis(F)
     
-    F = []
-    for i in d:
-        F.append(UnpickleObject(i, f))
-    EntryPoint(F)
-    JetAnalysis(F)
-    
+    B = {}
+    for i in Directories("_Pickle/").ListFilesInDir("_Pickle"):
+        if "Jets_" not in i:
+            continue
+        f = UnpickleObject(i)
+        B.update(f) 
 
-    B = UnpickleObject("FragmentationJets_110.0")
     PT = []
     ETA = []
     for i in B:
@@ -373,6 +375,9 @@ def EntryPointEfficiencyHists():
     ETA = list(set(ETA))
     PT.sort()
     ETA.sort()
+
+
+    print(PT, ETA)
     
     JetSurv = []
     TopSig = []
@@ -419,22 +424,22 @@ def EntryPointEfficiencyHists():
         TopSig.append(topsigjets)
         TopSpec.append(topspecjets)
 
-        EntryPointPlotHists(str(pt) + "_" + str(ETA[it]))
+        #EntryPointPlotHists(str(pt) + "_" + str(ETA[it]))
         it += 1
 
-    Histograms2D_Template("Fraction of Jets Remaining (n-jets-remaining/n-jets-event)", "Lowest PT Threshold (GeV)", "Highest Eta Threshold", 
+    Histograms2D_Template("Fraction of Jets Remaining \n (n-jets-remaining/n-jets-event)", "Lowest PT Threshold (GeV)", "Highest Eta Threshold", 
             None, None, min(PT), max(PT), min(ETA), max(ETA), 
             PT, ETA, "JetFraction", "Presentation5/", Weight = JetSurv)
 
-    Histograms2D_Template("Fraction of Jets Remaining With Top Contributions (n-jets-tops/n-jets-event)", "Lowest PT Threshold (GeV)", "Highest Eta Threshold", 
+    Histograms2D_Template("Fraction of Jets Remaining With Top Contributions \n (n-jets-tops/n-jets-event)", "Lowest PT Threshold (GeV)", "Highest Eta Threshold", 
             None, None, min(PT), max(PT), min(ETA), max(ETA), 
             PT, ETA, "JetFractionTopContributions", "Presentation5/", Weight = TopFrac)
 
-    Histograms2D_Template("Post Cut Purity of Jets with Top Contributions (n-jets-tops/n-jet-remaining)", "Lowest PT Threshold (GeV)", "Highest Eta Threshold", 
+    Histograms2D_Template("Post Cut Purity of Jets with Top Contributions \n (n-jets-tops/n-jet-remaining)", "Lowest PT Threshold (GeV)", "Highest Eta Threshold", 
             None, None, min(PT), max(PT), min(ETA), max(ETA), 
             PT, ETA, "JetPurityTops", "Presentation5/", Weight = JetPurity)
 
-    Histograms2D_Template("Fractional Loss of Jets with Top Contributions (n-jets-tops/n-jets-tops-nocuts)", "Lowest PT Threshold (GeV)", "Highest Eta Threshold", 
+    Histograms2D_Template("Fractional Loss of Jets with Top Contributions \n (n-jets-tops/n-jets-tops-nocuts)", "Lowest PT Threshold (GeV)", "Highest Eta Threshold", 
             None, None, min(PT), max(PT), min(ETA), max(ETA), 
             PT, ETA, "FractionalLoss", "Presentation5/", Weight = Loss)
 
@@ -714,46 +719,47 @@ def JetAnalysis(D):
 
     OutputDir = "Presentation5/WeirdJet"
     T = HistogramCombineTemplate()    
-    T.Title = "Resonance Top - DeltaR Between Matched Jet"
-    HT_3 = Histograms_Template("Jet-Flavour PDGID-1", "DeltaR", "Sampled Jets" , 100, 0, 3, Backup["DeltaR_TopJet_Top_1"]) 
-    HT_4 = Histograms_Template("Jet-Flavour PDGID-2", "DeltaR", "Sampled Jets" , 100, 0, 3, Backup["DeltaR_TopJet_Top_2"])
-    HT_5 = Histograms_Template("Jet-Flavour PDGID-3", "DeltaR", "Sampled Jets" , 100, 0, 3, Backup["DeltaR_TopJet_Top_3"])
-    HT_6 = Histograms_Template("Jet-Flavour PDGID-4", "DeltaR", "Sampled Jets" , 100, 0, 3, Backup["DeltaR_TopJet_Top_4"])
-    HT_7 = Histograms_Template("Jet-Flavour PDGID-5", "DeltaR", "Sampled Jets" , 100, 0, 3, Backup["DeltaR_TopJet_Top_5"])
-    HT_8 = Histograms_Template("Jet-Flavour PDGID-21", "DeltaR", "Sampled Jets" , 100, 0, 3, Backup["DeltaR_TopJet_Top_21"])
+    deltaR = "$\Delta$R"
+    T.Title = "Resonance Top - "+ deltaR + " Between Matched Jet"
+    HT_3 = Histograms_Template("Jet-Flavour PDGID-1", deltaR, "Sampled Jets" , 100, 0, 3, Backup["DeltaR_TopJet_Top_1"]) 
+    HT_4 = Histograms_Template("Jet-Flavour PDGID-2", deltaR, "Sampled Jets" , 100, 0, 3, Backup["DeltaR_TopJet_Top_2"])
+    HT_5 = Histograms_Template("Jet-Flavour PDGID-3", deltaR, "Sampled Jets" , 100, 0, 3, Backup["DeltaR_TopJet_Top_3"])
+    HT_6 = Histograms_Template("Jet-Flavour PDGID-4", deltaR, "Sampled Jets" , 100, 0, 3, Backup["DeltaR_TopJet_Top_4"])
+    HT_7 = Histograms_Template("Jet-Flavour PDGID-5", deltaR, "Sampled Jets" , 100, 0, 3, Backup["DeltaR_TopJet_Top_5"])
+    HT_8 = Histograms_Template("Jet-Flavour PDGID-21", deltaR, "Sampled Jets" , 100, 0, 3, Backup["DeltaR_TopJet_Top_21"])
     T.Histograms = [HT_3, HT_4, HT_5, HT_6, HT_7, HT_8]
     T.Filename = "dR_debug"
     T.Save("Plots/" + OutputDir)
 
     T = HistogramCombineTemplate()    
-    T.Title = "Resonance Top - DeltaR Between Matched Truth Jet"
-    HT_3 = Histograms_Template("Jet-Flavour PDGID-1", "DeltaR", "Sampled Jets" , 100, 0, 3,  Backup["DeltaR_TopTruthJet_Top_1"]) 
-    HT_4 = Histograms_Template("Jet-Flavour PDGID-2", "DeltaR", "Sampled Jets" , 100, 0, 3,  Backup["DeltaR_TopTruthJet_Top_2"])
-    HT_5 = Histograms_Template("Jet-Flavour PDGID-3", "DeltaR", "Sampled Jets" , 100, 0, 3,  Backup["DeltaR_TopTruthJet_Top_3"])
-    HT_6 = Histograms_Template("Jet-Flavour PDGID-4", "DeltaR", "Sampled Jets" , 100, 0, 3,  Backup["DeltaR_TopTruthJet_Top_4"])
-    HT_7 = Histograms_Template("Jet-Flavour PDGID-5", "DeltaR", "Sampled Jets" , 100, 0, 3,  Backup["DeltaR_TopTruthJet_Top_5"])
-    HT_8 = Histograms_Template("Jet-Flavour PDGID-21", "DeltaR", "Sampled Jets" , 100, 0, 3, Backup["DeltaR_TopTruthJet_Top_21"])
+    T.Title = "Resonance Top - " + deltaR + " Between Matched Truth Jet"
+    HT_3 = Histograms_Template("Jet-Flavour PDGID-1", "$\Delta$R", "Sampled Jets" , 100, 0, 3,  Backup["DeltaR_TopTruthJet_Top_1"]) 
+    HT_4 = Histograms_Template("Jet-Flavour PDGID-2", "$\Delta$R", "Sampled Jets" , 100, 0, 3,  Backup["DeltaR_TopTruthJet_Top_2"])
+    HT_5 = Histograms_Template("Jet-Flavour PDGID-3", "$\Delta$R", "Sampled Jets" , 100, 0, 3,  Backup["DeltaR_TopTruthJet_Top_3"])
+    HT_6 = Histograms_Template("Jet-Flavour PDGID-4", "$\Delta$R", "Sampled Jets" , 100, 0, 3,  Backup["DeltaR_TopTruthJet_Top_4"])
+    HT_7 = Histograms_Template("Jet-Flavour PDGID-5", "$\Delta$R", "Sampled Jets" , 100, 0, 3,  Backup["DeltaR_TopTruthJet_Top_5"])
+    HT_8 = Histograms_Template("Jet-Flavour PDGID-21", "$\Delta$R", "Sampled Jets" , 100, 0, 3, Backup["DeltaR_TopTruthJet_Top_21"])
     T.Histograms = [HT_3, HT_4, HT_5, HT_6, HT_7, HT_8]
     T.Filename = "dR_debug_truthjet"
     T.Save("Plots/" + OutputDir)
 
 
     T = HistogramCombineTemplate()    
-    T.Title = "DeltaR Between Top and Jets"
-    HT_0 = Histograms_Template("All", "DeltaR", "Sampled Jets", 100, 0, 3, Backup["DeltaR_TopJet_All"])  
-    HT_2 = Histograms_Template("Signal", "DeltaR", "Sampled Jets", 100, 0, 3, Backup["DeltaR_TopJet_Signal"]) 
-    HT_3 = Histograms_Template("Spectator", "DeltaR", "Sampled Jets", 100, 0, 3, Backup["DeltaR_TopJet_Spectator"]) 
-    HT_4 = Histograms_Template("Leptonic-Signal", "DeltaR", "Sampled Jets", 100, 0, 3, Backup["DeltaR_TopJet_Leptonic_Signal"])
-    HT_5 = Histograms_Template("Leptonic-Spect", "DeltaR", "Sampled Jets", 100, 0, 3, Backup["DeltaR_TopJet_Leptonic_Spect"])
+    T.Title = deltaR + " Between Top and Jets"
+    HT_0 = Histograms_Template("All", deltaR, "Sampled Jets", 100, 0, 3, Backup["DeltaR_TopJet_All"])  
+    HT_2 = Histograms_Template("Signal", deltaR, "Sampled Jets", 100, 0, 3, Backup["DeltaR_TopJet_Signal"]) 
+    HT_3 = Histograms_Template("Spectator", deltaR, "Sampled Jets", 100, 0, 3, Backup["DeltaR_TopJet_Spectator"]) 
+    HT_4 = Histograms_Template("Leptonic-Signal", deltaR, "Sampled Jets", 100, 0, 3, Backup["DeltaR_TopJet_Leptonic_Signal"])
+    HT_5 = Histograms_Template("Leptonic-Spect", deltaR, "Sampled Jets", 100, 0, 3, Backup["DeltaR_TopJet_Leptonic_Spect"])
     T.Histograms = [HT_2, HT_3, HT_4, HT_5, HT_0]
     T.Filename = "dR_JetTop"
     T.Save("Plots/" + OutputDir)
 
     T = HistogramCombineTemplate()    
-    T.Title = "DeltaR Between Jets with Common Top"
-    HT_0 = Histograms_Template("All", "DeltaR", "Sampled Jets", 100, 0, 3, Backup["DeltaR_JetsOfSameTop_All"])  
-    HT_2 = Histograms_Template("Signal", "DeltaR", "Sampled Jets", 100, 0, 3, Backup["DeltaR_JetsOfSameTop_Signal"]) 
-    HT_3 = Histograms_Template("Spectator", "DeltaR", "Sampled Jets", 100, 0, 3, Backup["DeltaR_JetsOfSameTop_Spectator"]) 
+    T.Title = deltaR + " Between Jets with Common Top"
+    HT_0 = Histograms_Template("All", deltaR, "Sampled Jets", 100, 0, 3, Backup["DeltaR_JetsOfSameTop_All"])  
+    HT_2 = Histograms_Template("Signal", deltaR, "Sampled Jets", 100, 0, 3, Backup["DeltaR_JetsOfSameTop_Signal"]) 
+    HT_3 = Histograms_Template("Spectator", deltaR, "Sampled Jets", 100, 0, 3, Backup["DeltaR_JetsOfSameTop_Spectator"]) 
     T.Histograms = [HT_2, HT_3, HT_0]
     T.Filename = "dR_JetJet"
     T.Save("Plots/" + OutputDir)

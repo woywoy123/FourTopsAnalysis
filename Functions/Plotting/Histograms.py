@@ -143,9 +143,9 @@ class SharedMethods(WriteDirectory, Notification):
             return None 
         
         if ".png" not in self.Filename:
-            self.PLT.savefig(self.Filename + ".png")
+            self.PLT.savefig(self.Filename + ".png", bbox_inches="tight")
         else: 
-            self.PLT.savefig(self.Filename)
+            self.PLT.savefig(self.Filename, bbox_inches="tight")
 
         self.ChangeDirToRoot()
         self.PLT.close("all")
@@ -199,7 +199,7 @@ class TH2F(SharedMethods, GenericAttributes):
             if i/skip - int(i/skip)  != 0:
                 continue
             for j in range(len(self.xBins)-1):
-                self.PLT.text(xbins[j]+ delx*0.5, ybins[i] + dely*0.5, round(hist.T[i, j], 2), color = "black", ha = "center", va = "center", fontweight = "bold")
+                self.PLT.text(xbins[j]+ delx*0.5, ybins[i] + dely*0.5, round(hist.T[i, j], 2), color = "black", ha = "center", va = "center", fontweight = "bold", size = "20")
 
    
     def SetBinContent(self):
@@ -223,7 +223,7 @@ class TH2F(SharedMethods, GenericAttributes):
 
     def CompileHistogram(self):
         self.Init_PLT()
-        self.Colorscheme = self.PLT.cm.BuPu
+        self.Colorscheme = self.PLT.cm.rainbow
         self.TransformData("xData", "xLabels")
         self.TransformData("yData", "yLabels")
         self.PLT.title(self.Title)
@@ -254,9 +254,8 @@ class TH2F(SharedMethods, GenericAttributes):
                 cmap = self.Colorscheme, weights = self.Weights)
 
         
-        self.PLT.grid()
         self.PLT.xticks(self.xData)
-
+        self.PLT.yticks(self.yData)
         self.PLT.xlabel(self.xTitle)
         self.PLT.ylabel(self.yTitle)
         self.PLT.colorbar()
